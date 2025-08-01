@@ -4,6 +4,8 @@ from strawberry import auto
 from typing import Optional
 from strawberry_django.filters import FilterLookup
 import strawberry_django
+from django.contrib.postgres.search import SearchQuery
+
 print("Test")
 
 
@@ -27,18 +29,18 @@ class SearchFilterMixin:
         return queryset.filter(name__contains=self.search)
 
 
-
-
 @strawberry_django.filter(models.Dataset)
 class DatasetFilter:
     id: auto
     name: Optional[FilterLookup[str]]
 
+
 @strawberry_django.filter(models.File)
 class FileFilter(IDFilterMixin, SearchFilterMixin):
     id: auto
     name: Optional[FilterLookup[str]]
-    
+
+
 @strawberry_django.filter(models.Document)
 class DocumentFilter(IDFilterMixin, SearchFilterMixin):
     id: auto
@@ -46,7 +48,12 @@ class DocumentFilter(IDFilterMixin, SearchFilterMixin):
 
 
 @strawberry_django.filter(models.Page)
-class PageFilter(IDFilterMixin, SearchFilterMixin):
+class PageFilter(IDFilterMixin):
     id: auto
     name: Optional[FilterLookup[str]]
-    
+    search: str | None
+
+    def filter_search(self, queryset, info):
+        if self.search is None:
+            return queryset
+        return queryset.filter(content__search=SearchQuery(self.search))

@@ -20,10 +20,10 @@ class OCRPageResultModel(BaseModel):
 
 @strawberry_pydantic.type(OCRTextLineModel)
 class OCRTextLine:
-    text: str
-    score: float
-    angle: float
-    bbox: List[Tuple[int, int]]
+    text: str = strawberry.field(description="Recognized text line")
+    score: float = strawberry.field(description="Confidence score of the recognized text line")
+    angle: float = strawberry.field(description="Estimated rotation angle of the text line")
+    bbox: List[Tuple[int, int]] = strawberry.field(description="Bounding box coordinates of the text line in the format [(x1, y1), (x2, y2), ...]")
 
 
 @strawberry_pydantic.type(OCRPageResultModel)

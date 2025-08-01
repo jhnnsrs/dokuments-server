@@ -18,7 +18,7 @@ from typing import Union
 from strawberry import LazyType
 from authentikate.strawberry.types import Client, User
 from koherent.strawberry.types import ProvenanceEntry
-from core.ocr.object import OCRPageResult
+from core.ocr.object import OCRPageResult, OCRPageResultModel
 
 
 @strawberry.type(description="Temporary Credentials for a file upload that can be used by a Client (e.g. in a python datalayer)")
@@ -83,10 +83,10 @@ class BigFileStore:
     bucket: str
     key: str
 
-    @strawberry.field()
+    @strawberry_django.field()
     def presigned_url(self, info: Info) -> str:
         datalayer = get_current_datalayer()
-        return cast(models.BigFileStore, self).get_presigned_url(info, datalayer=datalayer)
+        return self.get_presigned_url(info, datalayer=datalayer)
 
 
 @strawberry_django.type(models.MediaStore)
@@ -99,7 +99,7 @@ class MediaStore:
     @strawberry_django.field()
     def presigned_url(self, info: Info, host: str | None = None) -> str:
         datalayer = get_current_datalayer()
-        return cast(models.MediaStore, self).get_presigned_url(info, datalayer=datalayer, host=host)
+        return self.get_presigned_url(info, datalayer=datalayer, host=host)
 
 
 @strawberry_django.type(models.File, filters=filters.FileFilter, pagination=True)
@@ -144,9 +144,9 @@ class Page:
     image: BigFileStore
     content: str = strawberry.field(description="The content of the page as a flat string.")
 
-    @strawberry.field
+    @strawberry_django.field
     def ocr_result(self) -> OCRPageResult:
         """Returns the OCR result for the page."""
         if self.ocr_result:
-            return OCRPageResult(**self.ocr_result)
+            return OCRPageResultModel(**self.ocr_result)
         return None
