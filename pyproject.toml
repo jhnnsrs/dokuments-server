@@ -26,6 +26,7 @@ dependencies = [
     "duckdb>=1.2.2",
     "django-taggit>=6.1.0",
     "django-health-check>=3.20.0",
+    "whitenoise>=6.6",
 ]
 
 [dependency-groups]
