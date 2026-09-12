@@ -1,0 +1,54 @@
+
+services:
+   db:
+      image: jhnnsrs/daten:next
+      # Throwaway test DB: trade durability for speed (flush/TRUNCATE per test)
+      command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+      environment:
+         POSTGRES_MULTIPLE_DATABASES: testdb
+         POSTGRES_PASSWORD: test
+         POSTGRES_USER: test
+      labels:
+         - fakts.service=live.arkitekt.postgres
+      # No host port: docker picks a free one and `backend_stack` asks the running
+      # stack which, via `deployment.get_port`. Pinning a port opts out of the
+      # isolation dokker gives by minting a unique compose project per run -- two
+      # projects with different names still cannot both bind one host port, so a
+      # pinned port collides with sibling suites and with any stack stranded by a
+      # crashed run.
+      ports:
+        - 5432
+   rustfs:
+      # Real object storage, not moto. The S3 code under test generates presigned
+      # URLs and calls upload_fileobj; a mock that reimplements S3 semantics proves
+      # only that the mock agrees with itself.
+      image: rustfs/rustfs:latest
+      environment:
+         RUSTFS_ACCESS_KEY: dokuments_root
+         RUSTFS_SECRET_KEY: dokuments_root_secret
+         RUSTFS_VOLUMES: /data
+         RUSTFS_ADDRESS: ":9000"
+      ports:
+         - 9000
+   initc:
+      # Provisions the buckets and the scoped user the suite authenticates as,
+      # through RustFS's `rc` client.
+      image: jhnnsrs/init:next
+      depends_on:
+         rustfs:
+            condition: service_started
+      environment:
+         RUSTFS_HOST: http://rustfs:9000
+         RUSTFS_ACCESS_KEY: dokuments_root
+         RUSTFS_SECRET_KEY: dokuments_root_secret
+      volumes:
+         - ./configs/rustfs.yaml:/workspace/config.yaml
+   redis:
+      # Unused by the suite -- settings_test swaps in an InMemoryChannelLayer --
+      # but kept so the stack matches the deployment. Ephemeral port, as above.
+      image: redis
+      environment:
+         REDIS_HOST: redis
+         REDIS_PORT: 6379
+      ports:
+         - 6379

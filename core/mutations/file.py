@@ -45,7 +45,12 @@ def request_file_upload(info: Info, input: RequestFileUploadInput) -> types.Cred
             {
                 "Sid": "AllowAllS3ActionsInUserFolder",
                 "Effect": "Allow",
-                "Principal": "*",
+                # No "Principal": this is an inline *session* policy passed to
+                # AssumeRole, where the principal is the session itself. Principal
+                # only belongs in a resource-based or trust policy. MinIO ignored the
+                # stray key; RustFS validates and rejects the whole request with
+                # "unknown field `Principal`", which broke every upload and access
+                # grant.
                 "Action": ["s3:*"],
                 "Resource": "arn:aws:s3:::*",
             },
@@ -98,7 +103,12 @@ def request_file_upload_presigned(
             {
                 "Sid": "AllowAllS3ActionsInUserFolder",
                 "Effect": "Allow",
-                "Principal": "*",
+                # No "Principal": this is an inline *session* policy passed to
+                # AssumeRole, where the principal is the session itself. Principal
+                # only belongs in a resource-based or trust policy. MinIO ignored the
+                # stray key; RustFS validates and rejects the whole request with
+                # "unknown field `Principal`", which broke every upload and access
+                # grant.
                 "Action": ["s3:*"],
                 "Resource": "arn:aws:s3:::*",
             },
@@ -155,7 +165,12 @@ def request_file_access(
             {
                 "Sid": "AllowAllS3ActionsInUserFolder",
                 "Effect": "Allow",
-                "Principal": "*",
+                # No "Principal": this is an inline *session* policy passed to
+                # AssumeRole, where the principal is the session itself. Principal
+                # only belongs in a resource-based or trust policy. MinIO ignored the
+                # stray key; RustFS validates and rejects the whole request with
+                # "unknown field `Principal`", which broke every upload and access
+                # grant.
                 "Action": ["s3:*"],
                 "Resource": "arn:aws:s3:::*",
             },
