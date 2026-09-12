@@ -1,60 +1,41 @@
-import pytest
-import boto3
-import moto
-from moto import mock_s3
-import os
+"""Domain fixtures for the suite. The backing services come from the repo-root
+``conftest.py`` so that ``core/tests/`` gets them too.
+"""
 
 import pytest
-from core.models import Image, Dataset
-from django.contrib.auth import get_user_model
-from authentikate.models import App
-from dokuments_server.schema import schema
-from guardian.shortcuts import get_perms
-from asgiref.sync import sync_to_async
-from kante.context import ChannelsContext, EnhancendChannelsHTTPRequest
-
-
 
 
 @pytest.fixture(scope="function")
-def aws_credentials():
-    """Mocked AWS Credentials for moto."""
-    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_SECURITY_TOKEN"] = "testing"
-    os.environ["AWS_SESSION_TOKEN"] = "testing"
-    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+def authenticated_context(db, backend_stack):
+    """A context whose identity matches what the static "test" token resolves to.
 
-@pytest.fixture(scope="function")
-def s3(aws_credentials):
-    with mock_s3():
-        yield boto3.client("s3", region_name="us-east-1")
+    The schema's authentikate extension authenticates as that identity at resolve
+    time, so an ad-hoc user here would leave organization-scoped queries seeing no
+    data. dokuments' Dataset and File both carry a non-null organization, so the
+    membership matters.
+    """
+    from authentikate.models import Client, Membership, Organization, User
+    from kante.context import HttpContext, UniversalRequest
+    from strawberry.http.temporal_response import TemporalResponse
 
-@pytest.fixture
-def create_bucket1(s3):
-    s3.create_bucket(Bucket="babanana")
+    user, _ = User.objects.get_or_create(
+        sub="1", iss="static_issuer", defaults={"username": "static_issuer_1"}
+    )
+    client, _ = Client.objects.get_or_create(client_id="dokuments-test")
+    org, _ = Organization.objects.get_or_create(slug="static_org")
+    membership, _ = Membership.objects.get_or_create(user=user, organization=org)
 
-@pytest.fixture
-def create_bucket2(s3):
-    s3.create_bucket(Bucket="cabanana")
+    request = UniversalRequest(
+        _extensions={"token": "test"},
+        _client=client,  # type: ignore[arg-type]
+        _user=user,  # type: ignore[arg-type]
+        _organization=org,  # type: ignore[arg-type]
+    )
+    request.set_membership(membership)  # type: ignore[arg-type]
 
-
-
-
-@pytest.fixture
-@pytest.mark.asyncio
-def authenticated_context(db) :
-    user =  get_user_model().objects.create(username="fart", password="123456789")
-
-    app = App.objects.create(client_id="oinsoins")
-
-    return ChannelsContext(
-            request=EnhancendChannelsHTTPRequest(
-                user=user,
-                app=app,
-                body="",
-                scopes=["openid"],
-                consumer=None,
-            ),
-            response=None,
-        ),
+    return HttpContext(
+        request=request,
+        response=TemporalResponse(),
+        headers={"Authorization": "Bearer test"},
+        type="http",
+    )

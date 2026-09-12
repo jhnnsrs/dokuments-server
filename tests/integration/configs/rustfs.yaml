@@ -1,0 +1,11 @@
+# Buckets and the scoped user `initc` provisions in RustFS for the suite.
+# Bucket names match settings_test (FILE_BUCKET / MEDIA_BUCKET).
+buckets:
+  - name: media
+  - name: files
+users:
+  - access_key: dokuments_access_key
+    name: dokuments
+    policies:
+      - readwrite
+    secret_key: dokuments_secret_key

@@ -26,16 +26,16 @@ class Query:
     documents: list[types.Document] = strawberry_django.field()
     pages: list[types.Page] = strawberry_django.field()
 
-    @strawberry.django.field(permission_classes=[])
+    @strawberry_django.field(permission_classes=[])
     def file(self, info: Info, id: ID) -> types.File:
         print(id)
         return models.File.objects.get(id=id)
 
-    @strawberry.django.field(permission_classes=[])
+    @strawberry_django.field(permission_classes=[])
     def document(self, info: Info, id: ID) -> types.Document:
         return models.Document.objects.get(id=id)
 
-    @strawberry.django.field(permission_classes=[])
+    @strawberry_django.field(permission_classes=[])
     def page(self, info: Info, id: ID) -> types.Page:
         return models.Page.objects.get(id=id)
 

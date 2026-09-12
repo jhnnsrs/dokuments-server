@@ -38,13 +38,23 @@ dev = [
     "python-semantic-release>=9.21.0",
     "django-stubs>=5.2.0",
     "mypy>=1.15.0",
+    # Integration stack: dokker brings up the compose file, psycopg waits on the
+    # database, requests drives presigned POST/GET at the object store. No moto --
+    # the suite talks to a real RustFS container instead of mocking S3.
+    "dokker>=2.8",
+    "psycopg[binary]>=3",
+    "pytest-asyncio>=1.1.0",
+    "pytest-django>=4.11.1",
+    "requests>=2.32",
 ]
 
 [tool.django-stubs]
 django_settings_module = "dokuments_server.settings"
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "dokuments_server.settings"
+DJANGO_SETTINGS_MODULE = "dokuments_server.settings_test"
+# The schema's koherent extension hooks are async, so the GraphQL tests must be too.
+asyncio_mode = "auto"
 
 
 [tool.ruff]
