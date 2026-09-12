@@ -11,19 +11,18 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os
-from omegaconf import OmegaConf
+from .configuration import Settings
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-conf = OmegaConf.load(os.path.join(BASE_DIR, "config.yaml"))
+conf = Settings()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = conf.django.get("secret_key", "changeme")  # TODO: Change this in production
+SECRET_KEY = conf.django.secret_key  # TODO: Change this in production
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -65,21 +64,21 @@ STRAWBERRY_DJANGO = {
 AUTH_USER_MODEL = "authentikate.User"
 
 # S3_PUBLIC_DOMAIN = f"{conf.s3.public.host}:{conf.s3.public.port}"  # TODO: FIx
-AWS_ACCESS_KEY_ID = conf.s3.access_key
-AWS_SECRET_ACCESS_KEY = conf.s3.secret_key
-AWS_S3_ENDPOINT_URL = f"{conf.s3.protocol}://{conf.s3.host}:{conf.s3.port}"
+AWS_ACCESS_KEY_ID = conf.datalayer.access_key
+AWS_SECRET_ACCESS_KEY = conf.datalayer.secret_key
+AWS_S3_ENDPOINT_URL = f"{conf.datalayer.protocol}://{conf.datalayer.host}:{conf.datalayer.port}"
 # AWS_S3_PUBLIC_ENDPOINT_URL = (
 #    f"{conf.minio.public.protocol}://{conf.minio.public.host}:{conf.minio.public.port}"
 # )
-AWS_S3_URL_PROTOCOL = f"{conf.s3.protocol}:"
+AWS_S3_URL_PROTOCOL = f"{conf.datalayer.protocol}:"
 AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_EXPIRE = 3600
-AWS_S3_REGION_NAME = conf.s3.get("region", "us-east-1")
+AWS_S3_REGION_NAME = conf.datalayer.region
 
-FILE_BUCKET = conf.s3.buckets.media
-MEDIA_BUCKET = conf.s3.buckets.media
+FILE_BUCKET = conf.datalayer.media.bucket
+MEDIA_BUCKET = conf.datalayer.media.bucket
 
-AWS_STORAGE_BUCKET_NAME = conf.s3.buckets.media
+AWS_STORAGE_BUCKET_NAME = conf.datalayer.media.bucket
 AWS_DEFAULT_ACL = "private"
 AWS_S3_USE_SSL = True
 AWS_S3_SECURE_URLS = False
@@ -97,11 +96,12 @@ CHANNEL_LAYERS = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 
-CSRF_TRUSTED_ORIGINS = conf.get("csrf_trusted_origins", ["http://localhost", "https://localhost"])
-MY_SCRIPT_NAME = conf.get("force_script_name", "")
+CSRF_TRUSTED_ORIGINS = conf.django.csrf_trusted_origins
+MY_SCRIPT_NAME = conf.django.force_script_name
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -142,12 +142,12 @@ ASGI_APPLICATION = "dokuments_server.asgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": conf.db.engine,
-        "NAME": conf.db.db_name,
-        "USER": conf.db.username,
-        "PASSWORD": conf.db.password,
-        "HOST": conf.db.host,
-        "PORT": conf.db.port,
+        "ENGINE": conf.postgres.engine,
+        "NAME": conf.postgres.db_name,
+        "USER": conf.postgres.username,
+        "PASSWORD": conf.postgres.password,
+        "HOST": conf.postgres.host,
+        "PORT": conf.postgres.port,
     },
 }
 
@@ -171,18 +171,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-AUTHENTIKATE = {
-    "ISSUERS": [
-        *conf.get("authentikate", []),
-        {
-            "iss": "lok",
-            "kid": "lok-key-1",
-            "kind": "rsa",
-            "public_key": conf.lok.get("public_key", None),
-        },
-    ],
-    "STATIC_TOKENS": conf.lok.get("static_tokens", {}),
-}
+AUTHENTIKATE = conf.authentikate.model_dump()
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -200,6 +189,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+
+# WhiteNoise serves static directly from the staticfiles finders at request time
+# (works under both runserver and daphne), so no collectstatic / STATIC_ROOT is needed.
+WHITENOISE_USE_FINDERS = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
