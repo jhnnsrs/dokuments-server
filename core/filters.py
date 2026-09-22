@@ -6,8 +6,6 @@ from strawberry_django.filters import FilterLookup
 import strawberry_django
 from django.contrib.postgres.search import SearchQuery
 
-print("Test")
-
 
 @strawberry.input
 class IDFilterMixin:

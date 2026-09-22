@@ -68,5 +68,3 @@ class DatalayerExtension(SchemaExtension):
         
         yield
         datalayer.reset(t1)
-
-        print("GraphQL operation end")

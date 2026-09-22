@@ -1,4 +1,5 @@
 from kante.types import Info
+from dokuments_server.logs import QuietErrorsSchema
 from typing import AsyncGenerator, List
 import strawberry
 
@@ -28,7 +29,6 @@ class Query:
 
     @strawberry_django.field(permission_classes=[])
     def file(self, info: Info, id: ID) -> types.File:
-        print(id)
         return models.File.objects.get(id=id)
 
     @strawberry_django.field(permission_classes=[])
@@ -63,7 +63,11 @@ class Subscription:
     files = strawberry.subscription(resolver=subscriptions.files, description="Subscribe to real-time file updates")
 
 
-schema = strawberry.Schema(
+class Schema(QuietErrorsSchema, strawberry.Schema):
+    """strawberry.Schema, logging expected resolver errors as one line and bugs with a traceback (see logs.py)."""
+
+
+schema = Schema(
     query=Query,
     subscription=Subscription,
     mutation=Mutation,
